@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIPA - Sistema Híbrido v4.1</title>
+    <title>PIPA HÍBRIDO - Versão Estável</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="importmap">
@@ -26,9 +26,8 @@
                 <p class="text-[10px] text-blue-200 uppercase font-bold tracking-tighter">Pindamonhangaba - 2026</p>
             </div>
             <div class="flex gap-4 items-center">
-                <input type="password" id="api-key" placeholder="API KEY AQUI" class="text-xs p-2 rounded bg-blue-800 border-none text-white w-32 outline-none">
+                <input type="password" id="api-key" placeholder="COLE SUA API KEY AQUI" class="text-xs p-2 rounded bg-blue-800 border-none text-white w-48 outline-none focus:ring-1 ring-blue-400">
                 <div class="text-center bg-blue-800 p-2 rounded-lg px-6 border border-blue-700">
-                    <span class="block text-[10px] uppercase text-blue-300">IFL Global</span>
                     <span id="ifl-value" class="text-2xl font-black">0.0</span>
                 </div>
             </div>
@@ -45,8 +44,8 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 card overflow-x-auto">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-gray-700 uppercase text-xs">Coleta Padrão</h2>
-                        <button onclick="addStudent()" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded">+ ALUNO</button>
+                        <h2 class="font-bold text-gray-700 uppercase text-xs underline decoration-blue-500 underline-offset-4">Coleta Padrão</h2>
+                        <button onclick="addStudent()" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold hover:bg-blue-700 transition-colors">+ ADICIONAR ALUNO</button>
                     </div>
                     <table class="w-full text-xs">
                         <thead>
@@ -62,7 +61,7 @@
                         <tbody id="manual-table-body"></tbody>
                     </table>
                 </div>
-                <div class="card h-full flex flex-col items-center">
+                <div class="card h-full flex flex-col items-center justify-center">
                     <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase">Distribuição de Níveis</h2>
                     <canvas id="chartLevels" style="max-height: 250px;"></canvas>
                 </div>
@@ -71,9 +70,9 @@
 
         <section id="content-ia" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
             <div id="voice-list" class="space-y-3"></div>
-            <div class="card bg-slate-900 text-green-400 font-mono text-[11px] p-6 h-[400px] overflow-y-auto">
-                <p class="text-gray-500 mb-2 font-sans text-xs uppercase">Terminal de Análise Gemini:</p>
-                <div id="ai-response-log">Aguardando comando de voz...</div>
+            <div class="card bg-slate-900 text-green-400 font-mono text-[11px] p-6 h-[400px] overflow-y-auto border-4 border-slate-800">
+                <p class="text-gray-500 mb-2 font-sans text-xs uppercase font-bold tracking-widest">>> Terminal de Diagnóstico PIPA-AI</p>
+                <div id="ai-response-log" class="whitespace-pre-wrap">Aguardando comando de voz para análise multimodal...</div>
             </div>
         </section>
     </main>
@@ -81,7 +80,7 @@
     <script type="module">
         import { GoogleGenerativeAI } from "@google/generative-ai";
 
-        // Variáveis Globais
+        // Dados Iniciais
         window.students = [
             { id: 1, name: "AGATHA MAMEDE", words: 50, pseudo: 30, text: 18, isBF: false, isNEE: false },
             { id: 2, name: "MURILLO FELIX", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false },
@@ -91,7 +90,7 @@
         let audioChunks = [];
         let chart;
 
-        // --- FUNÇÕES DA PLANILHA ---
+        // Funções de Classificação e Gráfico
         function getClass(s) {
             if (s.words === 0 && s.pseudo === 0) return { label: "Nível 1", weight: 0, color: '#ef4444' };
             if (s.words > 65 && s.text >= 18) return { label: "Fluente", weight: 10, color: '#10b981' };
@@ -112,6 +111,7 @@
 
         function renderAll() {
             const body = document.getElementById('manual-table-body');
+            if(!body) return;
             body.innerHTML = '';
             let totalWeight = 0;
             let counts = { "Nível 1": 0, "Nível 2/3": 0, "Nível 4": 0, "Iniciante": 0, "Fluente": 0 };
@@ -120,27 +120,14 @@
                 const info = getClass(s);
                 totalWeight += info.weight;
                 counts[info.label]++;
-
-                body.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2"><input class="w-full font-bold outline-none uppercase" value="${s.name}" onchange="updateData(${i}, 'name', this.value)"></td>
-                        <td class="p-2 text-center"><input type="number" class="input-field" value="${s.words}" onchange="updateData(${i}, 'words', this.value)"></td>
-                        <td class="p-2 text-center"><input type="number" class="input-field" value="${s.pseudo}" onchange="updateData(${i}, 'pseudo', this.value)"></td>
-                        <td class="p-2 text-center"><input type="number" class="input-field" value="${s.text}" onchange="updateData(${i}, 'text', this.value)"></td>
-                        <td class="p-2 text-center">
-                            <input type="checkbox" ${s.isBF?'checked':''} onchange="updateData(${i}, 'isBF', this.checked)">
-                            <input type="checkbox" ${s.isNEE?'checked':''} onchange="updateData(${i}, 'isNEE', this.checked)">
-                        </td>
-                        <td class="p-2 text-center font-bold" style="color:${info.color}">${info.label.toUpperCase()}</td>
-                    </tr>`;
+                body.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2"><input class="w-full font-bold outline-none uppercase bg-transparent" value="${s.name}" onchange="updateData(${i}, 'name', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.words}" onchange="updateData(${i}, 'words', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.pseudo}" onchange="updateData(${i}, 'pseudo', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.text}" onchange="updateData(${i}, 'text', this.value)"></td><td class="p-2 text-center"><input type="checkbox" ${s.isBF?'checked':''} onchange="updateData(${i}, 'isBF', this.checked)"> <input type="checkbox" ${s.isNEE?'checked':''} onchange="updateData(${i}, 'isNEE', this.checked)"></td><td class="p-2 text-center font-bold" style="color:${info.color}">${info.label.toUpperCase()}</td></tr>`;
             });
-
             const ifl = window.students.length ? (totalWeight / window.students.length).toFixed(1) : 0;
             document.getElementById('ifl-value').innerText = ifl;
             updateChart(counts, ifl);
         }
 
-        // --- FUNÇÕES DE VOZ (IA) ---
+        // Funções de Voz (Corrigidas para v1 estável)
         window.switchTab = (tab) => {
             document.getElementById('content-manual').classList.toggle('hidden', tab !== 'manual');
             document.getElementById('content-ia').classList.toggle('hidden', tab !== 'ia');
@@ -151,7 +138,7 @@
 
         window.startRecording = async (index, btn) => {
             const key = document.getElementById('api-key').value;
-            if(!key) return alert("COLE SUA API KEY NO TOPO PARA USAR A VOZ.");
+            if(!key) return alert("INSIRA SUA API KEY NO TOPO PARA ANALISAR O ÁUDIO.");
 
             if (mediaRecorder && mediaRecorder.state === "recording") {
                 mediaRecorder.stop();
@@ -175,7 +162,7 @@
 
         async function callGeminiAI(blob, index) {
             const log = document.getElementById('ai-response-log');
-            log.innerHTML = `> ANALISANDO: ${window.students[index].name}...\n> PROCESSANDO ÁUDIO...`;
+            log.innerHTML = `> AGUARDE...\n> ENVIANDO ÁUDIO DE ${window.students[index].name}\n> USANDO MODELO GEMINI 1.5 FLASH (ESTÁVEL)...`;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -184,37 +171,25 @@
                 const apiKey = document.getElementById('api-key').value;
                 try {
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    // Trocando para a versão "gemini-1.5-flash" (sem o -latest) 
-                    // e garantindo que o SDK use a versão estável da API
+                    // Aqui está o segredo: usar o nome puro do modelo e deixar o SDK lidar com a versão
                     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
                     const result = await model.generateContent([
-                        {
-                            inlineData: {
-                                data: base64Data,
-                                mimeType: "audio/webm"
-                            }
-                        },
-                        { text: "Aja como um especialista em alfabetização. Analise este áudio de uma criança lendo. Forneça: 1. Estimativa de Palavras por Minuto (PPM). 2. Lista de palavras lidas com erro ou hesitação. 3. Avaliação da Prosódia (entonação e ritmo). Seja conciso." },
+                        "Analise a leitura desta criança. Informe com precisão: 1. Velocidade (PPM), 2. Erros de decodificação, 3. Qualidade da Prosódia. Responda em Português.",
+                        { inlineData: { data: base64Data, mimeType: "audio/webm" } }
                     ]);
 
-                    const response = await result.response;
-                    log.innerHTML = `> RESULTADO PARA ${window.students[index].name}:\n\n${response.text()}`;
+                    log.innerHTML = `> DIAGNÓSTICO FINAL - ${window.students[index].name}:\n\n${result.response.text()}`;
                 } catch (err) { 
-                    console.error(err);
-                    log.innerHTML = `> ERRO NA API: Verifique se sua chave está correta e se o modelo 'gemini-1.5-flash' está disponível no seu painel do AI Studio. Detalhes: ${err.message}`; 
+                    log.innerHTML = `> ERRO TÉCNICO: ${err.message}\n\nDica: Verifique se sua chave tem permissão para o Gemini 1.5 Flash no Google AI Studio.`; 
                 }
             };
         }
 
-        function renderVoiceCards() {
+        window.renderVoiceCards = () => {
             const list = document.getElementById('voice-list');
-            list.innerHTML = window.students.map((s, i) => `
-                <div class="card flex justify-between items-center p-3">
-                    <span class="font-bold text-gray-700 uppercase text-[10px]">${s.name}</span>
-                    <button onclick="startRecording(${i}, this)" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-bold text-[10px]">🎤 ANALISAR</button>
-                </div>`).join('');
-        }
+            list.innerHTML = window.students.map((s, i) => `<div class="card flex justify-between items-center p-3 border-l-4 border-blue-900"><span class="font-bold text-gray-700 uppercase text-[10px]">${s.name}</span><button onclick="startRecording(${i}, this)" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-full font-bold text-[10px] hover:bg-blue-600 hover:text-white transition-all">🎤 ANALISAR</button></div>`).join('');
+        };
 
         function updateChart(counts, ifl) {
             const ctx = document.getElementById('chartLevels').getContext('2d');
@@ -228,14 +203,13 @@
                     afterDraw: (chart) => {
                         const { ctx, chartArea: { top, width, height } } = chart;
                         ctx.save();
-                        ctx.font = 'bold 24px sans-serif'; ctx.fillStyle = '#1e3a8a'; ctx.textAlign = 'center';
-                        ctx.fillText(ifl, width / 2, top + height / 2 + 8);
+                        ctx.font = 'bold 30px sans-serif'; ctx.fillStyle = '#1e3a8a'; ctx.textAlign = 'center';
+                        ctx.fillText(ifl, width / 2, top + height / 2 + 10);
                         ctx.restore();
                     }
                 }]
             });
         }
-
         renderAll();
     </script>
 </body>
