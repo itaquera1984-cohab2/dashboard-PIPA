@@ -184,7 +184,7 @@
                 const apiKey = document.getElementById('api-key').value;
                 try {
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
                     const result = await model.generateContent(["Analise a fluência leitora deste áudio. Forneça: 1. Palavras por minuto (estimativa), 2. Erros de precisão, 3. Nível de prosódia. Responda em Português.", { inlineData: { data: base64Data, mimeType: "audio/webm" } }]);
                     log.innerHTML = `> RESULTADO PARA ${window.students[index].name}:\n\n${result.response.text()}`;
                 } catch (err) { log.innerHTML = `> ERRO NA API: ${err.message}`; }
