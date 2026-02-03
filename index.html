@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard PIPA - Pindamonhangaba</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; }
+        .input-field { border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; width: 100%; }
+    </style>
+</head>
+<body class="bg-gray-50 p-4 md:p-8">
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-blue-900">Dashboard de Fluência Leitora - PIPA</h1>
+        <p class="text-gray-600">Gestão Interativa de Turma - Pindamonhangaba 2025</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card text-center">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase">IFL da Turma</h3>
+            <p id="ifl-value" class="text-5xl font-bold text-blue-600">0.0</p>
+        </div>
+        <div class="card text-center">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase">Participação</h3>
+            <p id="part-value" class="text-5xl font-bold text-green-500">0%</p>
+        </div>
+        <div class="card text-center">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase">Vulnerabilidade</h3>
+            <p id="vuln-status" class="text-xl font-bold mt-4 italic">Calculando...</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 card overflow-x-auto">
+            <h2 class="text-xl font-bold mb-4">Entrada de Dados - Alunos</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="p-2 border">Nome</th>
+                        <th class="p-2 border text-center">Palavras</th>
+                        <th class="p-2 border text-center">Pseudo</th>
+                        <th class="p-2 border text-center">Texto</th>
+                        <th class="p-2 border text-center">BF/NEE</th>
+                        <th class="p-2 border">Classificação</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body">
+                    </tbody>
+            </table>
+            <button onclick="addStudent()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold">+ Adicionar Aluno</button>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-bold mb-4 text-center">Distribuição de Níveis</h2>
+            <canvas id="chartLevels"></canvas>
+        </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card border-l-8 border-red-500">
+            <h2 class="text-lg font-bold text-red-700">🆘 Apoio Pedagógico (≤ 8 palavras)</h2>
+            <ul id="list-apoio" class="mt-2 list-disc pl-5 text-sm text-gray-700"></ul>
+        </div>
+        <div class="card border-l-8 border-purple-500">
+            <h2 class="text-lg font-bold text-purple-700">🚨 Alerta Crítico (NEE + BF)</h2>
+            <ul id="list-critico" class="mt-2 list-disc pl-5 text-sm text-gray-700"></ul>
+        </div>
+    </div>
+
+    <script>
+        let students = [
+            { id: 1, name: "AGATHA MAMEDE", words: 50, pseudo: 30, text: 18, isBF: false, isNEE: false },
+            { id: 2, name: "MURILLO FELIX", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false },
+            { id: 3, name: "LORENZO SOUZA", words: 30, pseudo: 12, text: 18, isBF: true, isNEE: true }
+        ];
+
+        let chart;
+
+        function getClass(s) {
+            if (s.words === 0 && s.pseudo === 0) return { label: "Nível 1", weight: 0, color: '#ef4444' };
+            if (s.words > 65 && s.text >= 18) return { label: "Leitor Fluente", weight: 10, color: '#10b981' };
+            if (s.words > 10) return { label: "Leitor Iniciante", weight: 6, color: '#84cc16' };
+            if (s.words >= 2 && s.words <= 10) return { label: "Nível 4", weight: 4, color: '#facc15' };
+            return { label: "Nível 2/3", weight: 2, color: '#fb923c' };
+        }
+
+        function updateDashboard() {
+            const body = document.getElementById('student-table-body');
+            body.innerHTML = '';
+            
+            let totalWeight = 0;
+            let counts = { "Nível 1": 0, "Nível 2/3": 0, "Nível 4": 0, "Leitor Iniciante": 0, "Leitor Fluente": 0 };
+            let apoios = [];
+            let criticos = [];
+            let vulnCount = 0;
+
+            students.forEach((s, index) => {
+                const info = getClass(s);
+                totalWeight += info.weight;
+                counts[info.label]++;
+
+                if (s.words <= 8) apoios.push(s.name);
+                if (s.isBF && s.isNEE) criticos.push(s.name);
+                if (s.isBF || s.isNEE) vulnCount++;
+
+                body.innerHTML += `
+                    <tr>
+                        <td class="p-2 border"><input class="input-field" value="${s.name}" onchange="updateData(${index}, 'name', this.value)"></td>
+                        <td class="p-2 border text-center"><input type="number" class="input-field text-center" value="${s.words}" onchange="updateData(${index}, 'words', this.value)"></td>
+                        <td class="p-2 border text-center"><input type="number" class="input-field text-center" value="${s.pseudo}" onchange="updateData(${index}, 'pseudo', this.value)"></td>
+                        <td class="p-2 border text-center"><input type="number" class="input-field text-center" value="${s.text}" onchange="updateData(${index}, 'text', this.value)"></td>
+                        <td class="p-2 border text-center text-xs">
+                            <label><input type="checkbox" ${s.isBF?'checked':''} onchange="updateData(${index}, 'isBF', this.checked)"> BF</label><br>
+                            <label><input type="checkbox" ${s.isNEE?'checked':''} onchange="updateData(${index}, 'isNEE', this.checked)"> NEE</label>
+                        </td>
+                        <td class="p-2 border font-bold" style="color: ${info.color}">${info.label}</td>
+                    </tr>
+                `;
+            });
+
+            // Atualiza KPIs
+            const ifl = students.length ? (totalWeight / students.length).toFixed(1) : 0;
+            document.getElementById('ifl-value').innerText = ifl;
+            document.getElementById('part-value').innerText = "100%";
+            
+            const vulnPerc = (vulnCount / students.length) * 100;
+            const vText = vulnPerc > 50 ? "ALTA VULNERABILIDADE" : (vulnPerc >= 25 ? "MÉDIA VULNERABILIDADE" : "BAIXA VULNERABILIDADE");
+            document.getElementById('vuln-status').innerText = vText;
+            document.getElementById('vuln-status').className = `text-xl font-bold mt-4 ${vulnPerc > 50 ? 'text-red-600' : 'text-green-600'}`;
+
+            // Atualiza Listas
+            document.getElementById('list-apoio').innerHTML = apoios.map(n => `<li>${n}</li>`).join('');
+            document.getElementById('list-critico').innerHTML = criticos.length ? criticos.map(n => `<li>${n}</li>`).join('') : 'Nenhum aluno em alerta duplo.';
+
+            updateChart(counts);
+        }
+
+        function updateData(index, field, value) {
+            students[index][field] = (field === 'words' || field === 'pseudo' || field === 'text') ? parseInt(value) : value;
+            updateDashboard();
+        }
+
+        function addStudent() {
+            students.push({ id: Date.now(), name: "Novo Aluno", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false });
+            updateDashboard();
+        }
+
+        function updateChart(counts) {
+            const ctx = document.getElementById('chartLevels').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: ['#ef4444', '#fb923c', '#facc15', '#84cc16', '#10b981']
+                    }]
+                }
+            });
+        }
+
+        updateDashboard();
+    </script>
+</body>
+</html>
