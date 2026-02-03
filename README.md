@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIPA AI - Voice Diagnostics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; }
+        .input-field { border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; width: 100%; }
+        #chart-container { position: relative; height: 250px; width: 100%; }
+        .recording { animation: pulse 1.5s infinite; color: #ef4444; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 font-sans">
+    <header class="mb-6 flex justify-between items-center bg-white p-6 rounded-xl shadow-sm">
+        <div>
+            <h1 class="text-2xl font-black text-blue-900 uppercase">PIPA <span class="text-blue-500">VOICE AI</span></h1>
+            <p class="text-gray-400 text-xs font-bold">Diagnóstico por Inteligência Artificial</p>
+        </div>
+        <div class="text-right">
+            <span id="status-recording" class="hidden font-bold text-red-600 animate-pulse text-sm">● GRAVANDO ÁUDIO...</span>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="card text-center border-b-4 border-blue-600">
+            <h3 class="text-xs font-bold text-gray-400 uppercase">IFL Turma</h3>
+            <p id="ifl-value" class="text-3xl font-black text-blue-900">0.0</p>
+        </div>
+        <div class="card text-center border-b-4 border-green-500">
+            <h3 class="text-xs font-bold text-gray-400 uppercase">Vulnerabilidade</h3>
+            <p id="vuln-status" class="text-sm font-bold mt-2 text-green-600 italic">BAIXA</p>
+        </div>
+        <div class="card md:col-span-2 flex items-center justify-around">
+            <div class="text-center">
+                <span class="block text-xs font-bold text-gray-400">FLUENTES</span>
+                <span id="count-fluente" class="text-xl font-bold text-green-600">0</span>
+            </div>
+            <div class="text-center">
+                <span class="block text-xs font-bold text-gray-400">INICIANTES</span>
+                <span id="count-iniciante" class="text-xl font-bold text-lime-600">0</span>
+            </div>
+            <div class="text-center">
+                <span class="block text-xs font-bold text-gray-400">CRÍTICOS (N1-N4)</span>
+                <span id="count-critico" class="text-xl font-bold text-red-600">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-gray-700">Lista de Chamada e Coleta</h2>
+                <button onclick="addStudent()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded-lg">+ Novo Aluno</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 border-b">
+                            <th class="p-2 text-left">ESTUDANTE</th>
+                            <th class="p-2 text-center">VOZ (AI)</th>
+                            <th class="p-2 text-center">PALAVRAS</th>
+                            <th class="p-2 text-center">CLASSIFICAÇÃO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="font-bold text-gray-700 mb-4">Distribuição Proporcional</h2>
+            <div id="chart-container">
+                <canvas id="chartLevels"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let students = [
+            { id: 1, name: "AGATHA MAMEDE", words: 50, pseudo: 30, text: 18, isBF: false, isNEE: false },
+            { id: 2, name: "MURILLO FELIX", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false }
+        ];
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let chart;
+
+        // Plugin IFL Centro
+        const centerTextPlugin = {
+            id: 'centerText',
+            afterDraw: (chart) => {
+                const { ctx, chartArea: { top, bottom, left, right, width, height } } = chart;
+                ctx.save();
+                const iflValue = document.getElementById('ifl-value').innerText;
+                ctx.font = 'bold 24px sans-serif'; ctx.fillStyle = '#1e3a8a'; ctx.textAlign = 'center';
+                ctx.fillText(iflValue, left + width / 2, top + height / 2 + 8);
+                ctx.font = 'bold 10px sans-serif'; ctx.fillStyle = '#94a3b8';
+                ctx.fillText('IFL', left + width / 2, top + height / 2 - 15);
+                ctx.restore();
+            }
+        };
+
+        async function startRecording(btn, index) {
+            if (!navigator.mediaDevices) return alert("Microfone não suportado.");
+            
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                btn.innerHTML = "🎤";
+                btn.classList.remove("recording");
+                document.getElementById('status-recording').classList.add('hidden');
+                return;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                console.log("Áudio capturado para o aluno " + students[index].name);
+                alert("Áudio capturado! No próximo passo, enviaremos este arquivo para a API do Gemini analisar a velocidade e precisão.");
+            };
+
+            mediaRecorder.start();
+            btn.innerHTML = "🛑";
+            btn.classList.add("recording");
+            document.getElementById('status-recording').classList.remove('hidden');
+        }
+
+        function getClass(s) {
+            if (s.words === 0) return { label: "Nível 1", weight: 0, color: '#ef4444' };
+            if (s.words > 65) return { label: "Leitor Fluente", weight: 10, color: '#10b981' };
+            if (s.words > 10) return { label: "Iniciante", weight: 6, color: '#84cc16' };
+            return { label: "Nível 4", weight: 4, color: '#facc15' };
+        }
+
+        function updateDashboard() {
+            const body = document.getElementById('student-table-body');
+            body.innerHTML = '';
+            let totalWeight = 0;
+            let counts = { "Nível 1": 0, "Iniciante": 0, "Nível 4": 0, "Leitor Fluente": 0 };
+
+            students.forEach((s, index) => {
+                const info = getClass(s);
+                totalWeight += info.weight;
+                counts[info.label]++;
+
+                body.innerHTML += `
+                    <tr class="border-b border-gray-50">
+                        <td class="p-3"><input class="w-full bg-transparent font-bold outline-none" value="${s.name}" onchange="updateData(${index}, 'name', this.value)"></td>
+                        <td class="p-3 text-center">
+                            <button onclick="startRecording(this, ${index})" class="bg-gray-100 hover:bg-red-100 p-2 rounded-full transition-all">🎤</button>
+                        </td>
+                        <td class="p-3 text-center"><input type="number" class="w-12 text-center font-bold" value="${s.words}" onchange="updateData(${index}, 'words', this.value)"></td>
+                        <td class="p-3 text-center font-black text-xs" style="color: ${info.color}">${info.label.toUpperCase()}</td>
+                    </tr>
+                `;
+            });
+
+            const ifl = students.length ? (totalWeight / students.length).toFixed(1) : 0;
+            document.getElementById('ifl-value').innerText = ifl;
+            document.getElementById('count-fluente').innerText = counts["Leitor Fluente"];
+            document.getElementById('count-iniciante').innerText = counts["Iniciante"];
+            document.getElementById('count-critico').innerText = counts["Nível 1"] + counts["Nível 4"];
+            updateChart(counts);
+        }
+
+        function updateData(index, field, value) {
+            students[index][field] = field === 'words' ? parseInt(value) : value;
+            updateDashboard();
+        }
+
+        function addStudent() {
+            students.push({ id: Date.now(), name: "NOVO ALUNO", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false });
+            updateDashboard();
+        }
+
+        function updateChart(counts) {
+            const ctx = document.getElementById('chartLevels').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{ data: Object.values(counts), backgroundColor: ['#ef4444', '#84cc16', '#facc15', '#10b981'], cutout: '80%' }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } },
+                plugins: [centerTextPlugin]
+            });
+        }
+        updateDashboard();
+    </script>
+</body>
+</html>
