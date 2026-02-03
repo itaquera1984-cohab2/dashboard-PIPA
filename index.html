@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIPA HÍBRIDO - Versão Estável</title>
+    <title>PIPA AI - Versão Final Estável</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="importmap">
@@ -12,67 +12,68 @@
     <style>
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; }
         .tab-active { border-bottom: 4px solid #1e3a8a; color: #1e3a8a; font-weight: bold; }
-        .input-field { border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 4px; width: 100%; text-align: center; }
         .recording { animation: pulse 1.5s infinite; background: #fee2e2 !important; color: #ef4444 !important; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .input-manual { border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px; width: 100%; text-align: center; font-size: 12px; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-slate-50 font-sans">
 
-    <header class="bg-blue-900 text-white p-6 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+    <header class="bg-blue-900 text-white p-6 shadow-xl">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-2xl font-black italic">PIPA <span class="text-blue-400 font-normal">HÍBRIDO</span></h1>
-                <p class="text-[10px] text-blue-200 uppercase font-bold tracking-tighter">Pindamonhangaba - 2026</p>
+                <h1 class="text-2xl font-black tracking-tighter">PIPA <span class="text-blue-400">VOICE AI</span></h1>
+                <p class="text-[10px] uppercase font-bold text-blue-300">Gestão Interativa - Pindamonhangaba</p>
             </div>
-            <div class="flex gap-4 items-center">
-                <input type="password" id="api-key" placeholder="COLE SUA API KEY AQUI" class="text-xs p-2 rounded bg-blue-800 border-none text-white w-48 outline-none focus:ring-1 ring-blue-400">
-                <div class="text-center bg-blue-800 p-2 rounded-lg px-6 border border-blue-700">
-                    <span id="ifl-value" class="text-2xl font-black">0.0</span>
+            <div class="flex items-center gap-3">
+                <input type="password" id="api-key" placeholder="COLE SUA CHAVE AQUI" class="text-xs p-2 rounded bg-blue-800 border border-blue-700 text-white w-48 outline-none focus:ring-2 ring-blue-400">
+                <div class="bg-blue-800 p-2 rounded-lg border border-blue-700 min-w-[80px] text-center">
+                    <span class="block text-[9px] uppercase text-blue-300">IFL Global</span>
+                    <span id="ifl-value" class="text-xl font-black text-white">0.0</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto p-4 md:p-8">
-        <div class="flex space-x-8 mb-6 border-b">
-            <button onclick="switchTab('manual')" id="tab-manual" class="tab-active pb-2 px-4 uppercase text-xs">Planilha Manual</button>
-            <button onclick="switchTab('ia')" id="tab-ia" class="text-gray-400 pb-2 px-4 uppercase text-xs">Análise de Voz IA</button>
+    <main class="container mx-auto p-4">
+        <div class="flex space-x-6 mb-6 border-b border-slate-200">
+            <button onclick="switchTab('manual')" id="tab-manual" class="tab-active pb-2 px-4 uppercase text-[11px] tracking-widest transition-all">Planilha Manual</button>
+            <button onclick="switchTab('ia')" id="tab-ia" class="text-slate-400 pb-2 px-4 uppercase text-[11px] tracking-widest transition-all">Diagnóstico de Voz IA</button>
         </div>
 
-        <section id="content-manual">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 card overflow-x-auto">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-gray-700 uppercase text-xs underline decoration-blue-500 underline-offset-4">Coleta Padrão</h2>
-                        <button onclick="addStudent()" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold hover:bg-blue-700 transition-colors">+ ADICIONAR ALUNO</button>
-                    </div>
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-gray-400 text-center border-b uppercase">
-                                <th class="p-2 text-left">Estudante</th>
-                                <th class="p-2 w-16">Palavras</th>
-                                <th class="p-2 w-16">Pseudo</th>
-                                <th class="p-2 w-16">Texto</th>
-                                <th class="p-2 w-20">BF/NEE</th>
-                                <th class="p-2">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="manual-table-body"></tbody>
-                    </table>
+        <section id="content-manual" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 card overflow-x-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-slate-800 text-sm uppercase">Entrada de Dados</h2>
+                    <button onclick="addStudent()" class="bg-blue-600 text-white text-[10px] px-4 py-1.5 rounded-full font-bold hover:bg-blue-700 transition-all shadow-md">+ ALUNO</button>
                 </div>
-                <div class="card h-full flex flex-col items-center justify-center">
-                    <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase">Distribuição de Níveis</h2>
-                    <canvas id="chartLevels" style="max-height: 250px;"></canvas>
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="text-slate-400 text-center border-b uppercase font-bold bg-slate-50">
+                            <th class="p-3 text-left w-1/3">Estudante</th>
+                            <th class="p-3">Palavras</th>
+                            <th class="p-3">Pseudo</th>
+                            <th class="p-3">Texto</th>
+                            <th class="p-3 w-20">NEE</th>
+                            <th class="p-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manual-table-body"></tbody>
+                </table>
+            </div>
+            <div class="card flex flex-col items-center">
+                <h3 class="text-[11px] font-bold text-slate-400 uppercase mb-4">Distribuição Proporcional</h3>
+                <div class="w-full h-64">
+                    <canvas id="chartLevels"></canvas>
                 </div>
             </div>
         </section>
 
         <section id="content-ia" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
             <div id="voice-list" class="space-y-3"></div>
-            <div class="card bg-slate-900 text-green-400 font-mono text-[11px] p-6 h-[400px] overflow-y-auto border-4 border-slate-800">
-                <p class="text-gray-500 mb-2 font-sans text-xs uppercase font-bold tracking-widest">>> Terminal de Diagnóstico PIPA-AI</p>
-                <div id="ai-response-log" class="whitespace-pre-wrap">Aguardando comando de voz para análise multimodal...</div>
+            <div class="card bg-slate-900 border-4 border-slate-800 p-6 h-[450px] overflow-y-auto font-mono text-xs">
+                <p class="text-blue-400 font-sans font-bold mb-4 uppercase tracking-widest border-b border-slate-700 pb-2">Terminal Gemini Analytics</p>
+                <div id="ai-response-log" class="text-emerald-400 whitespace-pre-wrap">Aguardando gravação para iniciar processamento multimodal...</div>
             </div>
         </section>
     </main>
@@ -80,23 +81,19 @@
     <script type="module">
         import { GoogleGenerativeAI } from "@google/generative-ai";
 
-        // Dados Iniciais
         window.students = [
-            { id: 1, name: "AGATHA MAMEDE", words: 50, pseudo: 30, text: 18, isBF: false, isNEE: false },
-            { id: 2, name: "MURILLO FELIX", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false },
-            { id: 3, name: "LORENZO SOUZA", words: 30, pseudo: 12, text: 18, isBF: true, isNEE: true }
+            { id: 1, name: "AGATHA MAMEDE", words: 50, pseudo: 30, text: 18, isNEE: false },
+            { id: 2, name: "MURILLO FELIX", words: 0, pseudo: 0, text: 0, isNEE: false }
         ];
         let mediaRecorder;
         let audioChunks = [];
         let chart;
 
-        // Funções de Classificação e Gráfico
         function getClass(s) {
-            if (s.words === 0 && s.pseudo === 0) return { label: "Nível 1", weight: 0, color: '#ef4444' };
+            if (s.words === 0 && s.pseudo === 0) return { label: "Nível 1", weight: 0, color: '#f43f5e' };
             if (s.words > 65 && s.text >= 18) return { label: "Fluente", weight: 10, color: '#10b981' };
             if (s.words > 10) return { label: "Iniciante", weight: 6, color: '#84cc16' };
-            if (s.words >= 2) return { label: "Nível 4", weight: 4, color: '#facc15' };
-            return { label: "Nível 2/3", weight: 2, color: '#fb923c' };
+            return { label: "Nível 4", weight: 4, color: '#f59e0b' };
         }
 
         window.updateData = (index, field, value) => {
@@ -105,40 +102,46 @@
         };
 
         window.addStudent = () => {
-            window.students.push({ id: Date.now(), name: "NOVO ALUNO", words: 0, pseudo: 0, text: 0, isBF: false, isNEE: false });
+            window.students.push({ id: Date.now(), name: "NOVO ALUNO", words: 0, pseudo: 0, text: 0, isNEE: false });
             renderAll();
         };
 
         function renderAll() {
             const body = document.getElementById('manual-table-body');
-            if(!body) return;
-            body.innerHTML = '';
+            if(!body) return; body.innerHTML = '';
             let totalWeight = 0;
-            let counts = { "Nível 1": 0, "Nível 2/3": 0, "Nível 4": 0, "Iniciante": 0, "Fluente": 0 };
+            let counts = { "Nível 1": 0, "Nível 4": 0, "Iniciante": 0, "Fluente": 0 };
 
             window.students.forEach((s, i) => {
                 const info = getClass(s);
                 totalWeight += info.weight;
                 counts[info.label]++;
-                body.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2"><input class="w-full font-bold outline-none uppercase bg-transparent" value="${s.name}" onchange="updateData(${i}, 'name', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.words}" onchange="updateData(${i}, 'words', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.pseudo}" onchange="updateData(${i}, 'pseudo', this.value)"></td><td class="p-2 text-center"><input type="number" class="input-field" value="${s.text}" onchange="updateData(${i}, 'text', this.value)"></td><td class="p-2 text-center"><input type="checkbox" ${s.isBF?'checked':''} onchange="updateData(${i}, 'isBF', this.checked)"> <input type="checkbox" ${s.isNEE?'checked':''} onchange="updateData(${i}, 'isNEE', this.checked)"></td><td class="p-2 text-center font-bold" style="color:${info.color}">${info.label.toUpperCase()}</td></tr>`;
+                body.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition-colors">
+                        <td class="p-2"><input class="bg-transparent font-bold outline-none uppercase w-full" value="${s.name}" onchange="updateData(${i}, 'name', this.value)"></td>
+                        <td class="p-2"><input type="number" class="input-manual" value="${s.words}" onchange="updateData(${i}, 'words', this.value)"></td>
+                        <td class="p-2"><input type="number" class="input-manual" value="${s.pseudo}" onchange="updateData(${i}, 'pseudo', this.value)"></td>
+                        <td class="p-2"><input type="number" class="input-manual" value="${s.text}" onchange="updateData(${i}, 'text', this.value)"></td>
+                        <td class="p-2 text-center"><input type="checkbox" ${s.isNEE?'checked':''} onchange="updateData(${i}, 'isNEE', this.checked)"></td>
+                        <td class="p-2 text-center font-black text-[10px]" style="color:${info.color}">${info.label.toUpperCase()}</td>
+                    </tr>`;
             });
             const ifl = window.students.length ? (totalWeight / window.students.length).toFixed(1) : 0;
             document.getElementById('ifl-value').innerText = ifl;
             updateChart(counts, ifl);
         }
 
-        // Funções de Voz (Corrigidas para v1 estável)
         window.switchTab = (tab) => {
             document.getElementById('content-manual').classList.toggle('hidden', tab !== 'manual');
             document.getElementById('content-ia').classList.toggle('hidden', tab !== 'ia');
-            document.getElementById('tab-manual').className = tab === 'manual' ? 'tab-active pb-2 px-4 uppercase text-xs' : 'text-gray-400 pb-2 px-4 uppercase text-xs';
-            document.getElementById('tab-ia').className = tab === 'ia' ? 'tab-active pb-2 px-4 uppercase text-xs' : 'text-gray-400 pb-2 px-4 uppercase text-xs';
+            document.getElementById('tab-manual').className = tab === 'manual' ? 'tab-active pb-2 px-4 uppercase text-[11px] tracking-widest transition-all' : 'text-slate-400 pb-2 px-4 uppercase text-[11px] tracking-widest transition-all';
+            document.getElementById('tab-ia').className = tab === 'ia' ? 'tab-active pb-2 px-4 uppercase text-[11px] tracking-widest transition-all' : 'text-slate-400 pb-2 px-4 uppercase text-[11px] tracking-widest transition-all';
             if(tab === 'ia') renderVoiceCards();
         };
 
         window.startRecording = async (index, btn) => {
             const key = document.getElementById('api-key').value;
-            if(!key) return alert("INSIRA SUA API KEY NO TOPO PARA ANALISAR O ÁUDIO.");
+            if(!key) return alert("CHAVE API NÃO ENCONTRADA. COLE NO TOPO DA PÁGINA.");
 
             if (mediaRecorder && mediaRecorder.state === "recording") {
                 mediaRecorder.stop();
@@ -162,7 +165,7 @@
 
         async function callGeminiAI(blob, index) {
             const log = document.getElementById('ai-response-log');
-            log.innerHTML = `> AGUARDE...\n> ENVIANDO ÁUDIO DE ${window.students[index].name}\n> USANDO MODELO GEMINI 1.5 FLASH (ESTÁVEL)...`;
+            log.innerHTML = `> SOLICITANDO ACESSO AO SERVIDOR...\n> ANALISANDO VOZ DE: ${window.students[index].name}\n> AGUARDE...`;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -170,25 +173,25 @@
                 const base64Data = reader.result.split(',')[1];
                 const apiKey = document.getElementById('api-key').value;
                 try {
+                    // MUDANÇA CRUCIAL: Forçando uso da API v1 estável
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    // Aqui está o segredo: usar o nome puro do modelo e deixar o SDK lidar com a versão
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
 
                     const result = await model.generateContent([
-                        "Analise a leitura desta criança. Informe com precisão: 1. Velocidade (PPM), 2. Erros de decodificação, 3. Qualidade da Prosódia. Responda em Português.",
+                        "Analise este áudio de uma criança lendo. Forneça: 1. Estimativa de Palavras por Minuto (PPM), 2. Erros cometidos, 3. Ritmo e Prosódia. Responda em Português de forma profissional.",
                         { inlineData: { data: base64Data, mimeType: "audio/webm" } }
                     ]);
 
-                    log.innerHTML = `> DIAGNÓSTICO FINAL - ${window.students[index].name}:\n\n${result.response.text()}`;
+                    log.innerHTML = `> SUCESSO! DIAGNÓSTICO PARA ${window.students[index].name}:\n\n${result.response.text()}`;
                 } catch (err) { 
-                    log.innerHTML = `> ERRO TÉCNICO: ${err.message}\n\nDica: Verifique se sua chave tem permissão para o Gemini 1.5 Flash no Google AI Studio.`; 
+                    log.innerHTML = `> FALHA NA COMUNICAÇÃO: ${err.message}\n\nDICA: Verifique se sua chave está ativa no painel do Google AI Studio e se o áudio tem som.`; 
                 }
             };
         }
 
         window.renderVoiceCards = () => {
             const list = document.getElementById('voice-list');
-            list.innerHTML = window.students.map((s, i) => `<div class="card flex justify-between items-center p-3 border-l-4 border-blue-900"><span class="font-bold text-gray-700 uppercase text-[10px]">${s.name}</span><button onclick="startRecording(${i}, this)" class="bg-blue-100 text-blue-600 px-4 py-2 rounded-full font-bold text-[10px] hover:bg-blue-600 hover:text-white transition-all">🎤 ANALISAR</button></div>`).join('');
+            list.innerHTML = window.students.map((s, i) => `<div class="card flex justify-between items-center p-4 border-l-4 border-blue-900 bg-white shadow-sm"><span class="font-bold text-slate-700 uppercase text-[10px]">${s.name}</span><button onclick="startRecording(${i}, this)" class="bg-blue-50 text-blue-600 px-5 py-2 rounded-full font-bold text-[10px] hover:bg-blue-600 hover:text-white transition-all border border-blue-100">🎤 ANALISAR</button></div>`).join('');
         };
 
         function updateChart(counts, ifl) {
@@ -196,14 +199,14 @@
             if (chart) chart.destroy();
             chart = new Chart(ctx, {
                 type: 'doughnut',
-                data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#ef4444','#fb923c','#facc15','#84cc16','#10b981'], cutout: '80%' }] },
-                options: { maintainAspectRatio: false, plugins: { legend: { display:false } } },
+                data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#f43f5e','#f59e0b','#84cc16','#10b981'], cutout: '85%' }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } },
                 plugins: [{
                     id: 'centerText',
                     afterDraw: (chart) => {
                         const { ctx, chartArea: { top, width, height } } = chart;
                         ctx.save();
-                        ctx.font = 'bold 30px sans-serif'; ctx.fillStyle = '#1e3a8a'; ctx.textAlign = 'center';
+                        ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = '#1e3a8a'; ctx.textAlign = 'center';
                         ctx.fillText(ifl, width / 2, top + height / 2 + 10);
                         ctx.restore();
                     }
