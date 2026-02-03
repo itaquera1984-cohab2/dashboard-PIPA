@@ -151,23 +151,23 @@
             btn.innerText = "🛑 PARAR";
         };
 
-        async function sendToGeminiDirect(blob, index) {
+async function sendToGeminiDirect(blob, index) {
             const log = document.getElementById('ai-response-log');
             const apiKey = document.getElementById('api-key').value;
-            log.innerHTML = `> ACESSANDO SERVIDOR DO GOOGLE...\n> ANALISANDO ÁUDIO DE: ${window.students[index].name}`;
+            log.innerHTML = `> ACESSANDO SERVIDOR...\n> ANALISANDO: ${window.students[index].name}`;
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 const base64Data = reader.result.split(',')[1];
                 
-                // ENDEREÇO UNIVERSAL DA API DO GOOGLE
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                // MUDANÇA: Usando a versão v1 (estável) e o modelo PRO se o FLASH falhar
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
 
                 const payload = {
                     contents: [{
                         parts: [
-                            { text: "Analise a fluência desta leitura. Retorne: Palavras por minuto, Erros cometidos e Nível de prosódia. Responda em Português." },
+                            { text: "Analise este áudio de leitura. Informe: Palavras por minuto e nível de fluência. Responda em Português." },
                             { inlineData: { mimeType: "audio/webm", data: base64Data } }
                         ]
                     }]
@@ -182,15 +182,32 @@
 
                     const data = await response.json();
                     
-                    if (data.candidates && data.candidates[0].content.parts[0].text) {
-                        log.innerHTML = `> DIAGNÓSTICO CONCLUÍDO:\n\n${data.candidates[0].content.parts[0].text}`;
-                    } else {
-                        log.innerHTML = `> ERRO NA RESPOSTA: ${JSON.stringify(data)}`;
+                    if (data.candidates && data.candidates[0].content) {
+                        log.innerHTML = `> SUCESSO:\n\n${data.candidates[0].content.parts[0].text}`;
+                    } else if (data.error) {
+                        // Se o PRO também der erro 404, tentaremos o nome alternativo
+                        log.innerHTML = `> ERRO DO GOOGLE: ${data.error.message}\n\nTentando rota alternativa...`;
+                        tryAlternativeModel(base64Data, apiKey, index);
                     }
                 } catch (err) {
-                    log.innerHTML = `> ERRO DE CONEXÃO: ${err.message}`;
+                    log.innerHTML = `> ERRO DE REDE: ${err.message}`;
                 }
             };
+        }
+
+        async function tryAlternativeModel(base64, key, index) {
+            const log = document.getElementById('ai-response-log');
+            // Última tentativa com o nome de modelo legado que algumas contas ainda usam
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${key}`;
+            const payload = { contents: [{ parts: [{ text: "Transcrição curta deste áudio." }, { inlineData: { mimeType: "audio/webm", data: base64 } }] }] };
+            
+            const response = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+            const data = await response.json();
+            if(data.candidates) {
+                log.innerHTML = `> CONCLUÍDO (Rota 2):\n\n${data.candidates[0].content.parts[0].text}`;
+            } else {
+                log.innerHTML = `> ERRO CRÍTICO: O modelo Gemini 1.5 não parece estar ativo na sua conta Google AI Studio. Verifique os termos de uso no site do AI Studio.`;
+            }
         }
 
         function renderVoiceCards() {
