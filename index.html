@@ -175,7 +175,7 @@
 
         async function callGeminiAI(blob, index) {
             const log = document.getElementById('ai-response-log');
-            log.innerHTML = `> ANALISANDO: ${window.students[index].name}...\n> PROCESSANDO ÁUDIO VIA GEMINI 1.5 FLASH...`;
+            log.innerHTML = `> ANALISANDO: ${window.students[index].name}...\n> PROCESSANDO ÁUDIO...`;
             
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -184,10 +184,26 @@
                 const apiKey = document.getElementById('api-key').value;
                 try {
                     const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-                    const result = await model.generateContent(["Analise a fluência leitora deste áudio. Forneça: 1. Palavras por minuto (estimativa), 2. Erros de precisão, 3. Nível de prosódia. Responda em Português.", { inlineData: { data: base64Data, mimeType: "audio/webm" } }]);
-                    log.innerHTML = `> RESULTADO PARA ${window.students[index].name}:\n\n${result.response.text()}`;
-                } catch (err) { log.innerHTML = `> ERRO NA API: ${err.message}`; }
+                    // Trocando para a versão "gemini-1.5-flash" (sem o -latest) 
+                    // e garantindo que o SDK use a versão estável da API
+                    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+                    const result = await model.generateContent([
+                        {
+                            inlineData: {
+                                data: base64Data,
+                                mimeType: "audio/webm"
+                            }
+                        },
+                        { text: "Aja como um especialista em alfabetização. Analise este áudio de uma criança lendo. Forneça: 1. Estimativa de Palavras por Minuto (PPM). 2. Lista de palavras lidas com erro ou hesitação. 3. Avaliação da Prosódia (entonação e ritmo). Seja conciso." },
+                    ]);
+
+                    const response = await result.response;
+                    log.innerHTML = `> RESULTADO PARA ${window.students[index].name}:\n\n${response.text()}`;
+                } catch (err) { 
+                    console.error(err);
+                    log.innerHTML = `> ERRO NA API: Verifique se sua chave está correta e se o modelo 'gemini-1.5-flash' está disponível no seu painel do AI Studio. Detalhes: ${err.message}`; 
+                }
             };
         }
 
